@@ -9,6 +9,7 @@ function App() {
   const [sessions, setSessions] = useState([])
   const [activeSessionId, setActiveSessionId] = useState('')
   const [queryText, setQueryText] = useState('')
+  const [attachedFiles, setAttachedFiles] = useState([])
   const [status, setStatus] = useState('idle')
   const [error, setError] = useState('')
 
@@ -62,6 +63,7 @@ function App() {
 
   const handleNewChat = async () => {
     setQueryText('')
+    setAttachedFiles([])
     await createSession()
   }
 
@@ -69,60 +71,42 @@ function App() {
     setError('')
     setActiveSessionId(sessionId)
     setQueryText('')
+    setAttachedFiles([])
   }
 
-  const handleFileAttach = async (file) => {
+  const handleFileAttach = async (files) => {
     setError('')
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      setError('Only PDF files are supported.')
-      return
-    }
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size must be 10 MB or less.')
+    const selectedFiles = Array.from(files || [])
+    if (!selectedFiles.length) {
       return
     }
 
-    const sessionId = await getOrCreateSession()
-    if (!sessionId) {
-      return
-    }
-
-    setStatus('loading')
-    const baseUrl = `${API_BASE}/documents/session/${sessionId}/upload`
-
-    const tryUpload = async (fieldName) => {
-      const formData = new FormData()
-      formData.append(fieldName, file)
-      const response = await fetch(baseUrl, {
-        method: 'POST',
-        body: formData,
-      })
-      return response
-    }
-
-    try {
-      let response = await tryUpload('document')
-      if (!response.ok) {
-        response = await tryUpload('file')
+    for (const file of selectedFiles) {
+      if (!file.name.toLowerCase().endsWith('.pdf')) {
+        setError('Only PDF files are supported.')
+        return
       }
-
-      if (!response.ok) {
-        const body = await response.text()
-        throw new Error(`Upload failed (${response.status}): ${body || response.statusText}`)
+      if (file.size > 10 * 1024 * 1024) {
+        setError('File size must be 10 MB or less.')
+        return
       }
-
-      const nextMessages = [...(activeSession?.messages ?? []), { role: 'system', text: `Uploaded ${file.name}` }]
-      updateSessionMessages(sessionId, nextMessages)
-    } catch (err) {
-      setError(err.message || 'File upload failed')
-    } finally {
-      setStatus('idle')
     }
+
+    setAttachedFiles((prev) => [...prev, ...selectedFiles])
+  }
+
+  const handleRemoveAttachment = (index) => {
+    setAttachedFiles((prev) => prev.filter((_, fileIndex) => fileIndex !== index))
   }
 
   const handleSend = async () => {
+    if (status === 'loading') {
+      return
+    }
+
     const trimmedText = queryText.trim()
-    if (!trimmedText) {
+    const hasFiles = attachedFiles.length > 0
+    if (!trimmedText && !hasFiles) {
       return
     }
 
@@ -131,25 +115,36 @@ function App() {
       return
     }
 
-    const userMessage = { role: 'user', text: trimmedText }
+    const userMessage = {
+      role: 'user',
+      text: trimmedText || (hasFiles ? `Attached ${attachedFiles.length} document${attachedFiles.length > 1 ? 's' : ''}` : ''),
+    }
     const nextMessages = [...(activeSession?.messages ?? []), userMessage]
     updateSessionMessages(sessionId, nextMessages)
-    setQueryText('')
     setStatus('loading')
     setError('')
 
     try {
-      const response = await fetch(`${API_BASE}/documents/session/${sessionId}/query`, {
+      const formData = new FormData()
+      const messageText = trimmedText || (hasFiles ? 'Please review the attached document(s).' : '')
+      formData.append('message', messageText)
+      formData.append('sessionId', sessionId)
+      attachedFiles.forEach((file) => {
+        formData.append('files', file, file.name)
+      })
+
+      const response = await fetch(`${API_BASE}/documents/session/${sessionId}/chat`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: trimmedText }),
+        body: formData,
       })
       if (!response.ok) {
-        throw new Error('Query failed')
+        throw new Error('Request failed')
       }
       const data = await response.json()
       const assistantMessage = { role: 'assistant', text: data.answer || 'No answer received' }
       updateSessionMessages(sessionId, [...nextMessages, assistantMessage])
+      setQueryText('')
+      setAttachedFiles([])
     } catch (err) {
       setError(err.message || 'Request failed')
     } finally {
@@ -171,9 +166,11 @@ function App() {
         status={status}
         error={error}
         queryText={queryText}
+        attachedFiles={attachedFiles}
         onQueryChange={setQueryText}
         onSend={handleSend}
         onFileAttach={handleFileAttach}
+        onRemoveAttachment={handleRemoveAttachment}
       />
     </div>
   )

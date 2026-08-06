@@ -1,7 +1,18 @@
 import MessageList from './MessageList.jsx'
 import MessageInput from './MessageInput.jsx'
 
-function ChatWindow({ session, messages, status, error, queryText, onQueryChange, onSend, onFileAttach }) {
+function ChatWindow({
+  session,
+  messages,
+  status,
+  error,
+  queryText,
+  attachedFiles,
+  onQueryChange,
+  onSend,
+  onFileAttach,
+  onRemoveAttachment,
+}) {
   return (
     <main className="chat-window">
       {/* <div className="chat-header">
@@ -17,9 +28,11 @@ function ChatWindow({ session, messages, status, error, queryText, onQueryChange
 
       <MessageInput
         value={queryText}
+        attachedFiles={attachedFiles}
         onChange={onQueryChange}
         onSend={onSend}
         onFileAttach={onFileAttach}
+        onRemoveAttachment={onRemoveAttachment}
         disabled={status === 'loading'}
       />
     </main>

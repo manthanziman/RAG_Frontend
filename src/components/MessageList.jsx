@@ -17,13 +17,15 @@ function MessageList({ messages, isLoading }) {
       ) : (
         messages.map((message, index) => (
           <div key={`${message.role}-${index}`} className={`message message-${message.role}`}>
-            <div className="message-role">{message.role === <User/> ? 'You' : message.role === 'assistant' ? <Bot/> : <Settings/>}</div>
+            <div className="message-role">
+              {message.role === 'user' ? <User /> : message.role === 'assistant' ? <Bot /> : <Settings />}
+            </div>
             <div className="message-text">{message.text}</div>
           </div>
         ))
       )}
 
-      {isLoading && <div className="message message-status">Thinking…</div>}
+      {isLoading && <div className="message message-status">Sending…</div>}
     </div>
   )
 }
