@@ -15,8 +15,9 @@ function Sidebar({ sessions, activeSessionId, onNewChat, onSelectSession }) {
         ) : (
           sessions.map((session) => {
             const preview =
-              session.messages?.find((message) => message.role === 'user' || message.role === 'system')?.text ||
-              session.sessionId.slice(-8)
+              session.messages?.find((message) => message.role === 'user' || message.role === 'assistant')?.text ||
+              session.preview ||
+              'New chat'
             return (
               <button
                 key={session.sessionId}
@@ -24,9 +25,9 @@ function Sidebar({ sessions, activeSessionId, onNewChat, onSelectSession }) {
                 className={`session-item ${session.sessionId === activeSessionId ? 'active' : ''}`}
                 onClick={() => onSelectSession(session.sessionId)}
               >
-                <MessageCircle/>
+                {/* <MessageCircle/> */}
                 <span>{preview}</span>
-                <small>{session.sessionId.slice(-8)}</small>
+                {/* <small>{session.sessionId.slice(-8)}</small> */}
               </button>
             )
           })

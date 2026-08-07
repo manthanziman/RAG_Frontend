@@ -5,9 +5,25 @@ import './App.css'
 
 const API_BASE = 'http://localhost:4001/api'
 
+// Only used to reopen the same conversation after a refresh — the sidebar
+// list itself always comes from the backend now, not from localStorage.
+const ACTIVE_SESSION_KEY = 'rag_active_session_id'
+
+// Backend stores chat turns as { role, content, createdAt }; the UI renders
+// { role, text }. Map on the way in from GET /session/:id.
+const mapServerMessages = (messages) =>
+  (messages || []).map((message) => ({
+    role: message.role,
+    text: message.content,
+  }))
+
 function App() {
+  // Each entry: { sessionId, createdAt, preview, messages }.
+  // `messages` is `null` until it's actually been fetched (lazy load).
   const [sessions, setSessions] = useState([])
-  const [activeSessionId, setActiveSessionId] = useState('')
+  const [activeSessionId, setActiveSessionId] = useState(
+    () => localStorage.getItem(ACTIVE_SESSION_KEY) || '',
+  )
   const [queryText, setQueryText] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const [status, setStatus] = useState('idle')
@@ -15,11 +31,78 @@ function App() {
 
   const activeSession = sessions.find((session) => session.sessionId === activeSessionId)
 
-  useEffect(() => {
-    if (!activeSessionId && sessions.length > 0) {
-      setActiveSessionId(sessions[0].sessionId)
+  // Fetch a single session's full message history and merge it into state.
+  // Safe to call repeatedly — uses a functional update, no stale closures.
+  const hydrateSessionMessages = async (sessionId) => {
+    try {
+      const response = await fetch(`${API_BASE}/documents/session/${sessionId}`)
+      if (!response.ok) {
+        throw new Error('Unable to load conversation')
+      }
+      const data = await response.json()
+      const messages = mapServerMessages(data.session?.messages)
+      setSessions((prev) =>
+        prev.map((session) => (session.sessionId === sessionId ? { ...session, messages } : session)),
+      )
+    } catch (err) {
+      setError(err.message || 'Unable to load conversation')
     }
-  }, [sessions, activeSessionId])
+  }
+
+  // On load: fetch the list of every conversation from the backend, then
+  // hydrate whichever one should be active (last-open, or the newest).
+  useEffect(() => {
+    let cancelled = false
+
+    const init = async () => {
+      setStatus('loading')
+      try {
+        const response = await fetch(`${API_BASE}/documents/session`)
+        if (!response.ok) {
+          throw new Error('Unable to load conversations')
+        }
+        const data = await response.json()
+        const list = (data.sessions || []).map((session) => ({
+          sessionId: session.sessionId,
+          createdAt: session.createdAt,
+          preview: session.preview,
+          messages: null, // lazy-loaded on selection
+        }))
+
+        if (cancelled) return
+        setSessions(list)
+
+        const storedActiveId = localStorage.getItem(ACTIVE_SESSION_KEY)
+        const initialId =
+          (storedActiveId && list.some((session) => session.sessionId === storedActiveId) && storedActiveId) ||
+          list[0]?.sessionId ||
+          ''
+
+        if (initialId) {
+          setActiveSessionId(initialId)
+          await hydrateSessionMessages(initialId)
+        }
+      } catch (err) {
+        if (!cancelled) setError(err.message || 'Unable to load conversations')
+      } finally {
+        if (!cancelled) setStatus('idle')
+      }
+    }
+
+    init()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  // Persist which chat is active so a refresh reopens the same conversation.
+  useEffect(() => {
+    if (activeSessionId) {
+      localStorage.setItem(ACTIVE_SESSION_KEY, activeSessionId)
+    } else {
+      localStorage.removeItem(ACTIVE_SESSION_KEY)
+    }
+  }, [activeSessionId])
 
   const updateSessionMessages = (sessionId, nextMessages) => {
     setSessions((prev) =>
@@ -42,7 +125,12 @@ function App() {
       }
       const data = await response.json()
       const sessionId = data.sessionId
-      const newSession = { sessionId, messages: [] }
+      const newSession = {
+        sessionId,
+        createdAt: new Date().toISOString(),
+        preview: null,
+        messages: [], // brand new, nothing to fetch
+      }
       setSessions((prev) => [newSession, ...prev])
       setActiveSessionId(sessionId)
       return sessionId
@@ -67,11 +155,18 @@ function App() {
     await createSession()
   }
 
-  const handleSelectSession = (sessionId) => {
+  const handleSelectSession = async (sessionId) => {
     setError('')
     setActiveSessionId(sessionId)
     setQueryText('')
     setAttachedFiles([])
+
+    const target = sessions.find((session) => session.sessionId === sessionId)
+    if (!target || !Array.isArray(target.messages)) {
+      setStatus('loading')
+      await hydrateSessionMessages(sessionId)
+      setStatus('idle')
+    }
   }
 
   const handleFileAttach = async (files) => {
