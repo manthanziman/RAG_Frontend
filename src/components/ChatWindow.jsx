@@ -7,32 +7,22 @@ function ChatWindow({
   status,
   error,
   queryText,
-  attachedFiles,
   onQueryChange,
   onSend,
-  onFileAttach,
-  onRemoveAttachment,
 }) {
   return (
     <main className="chat-window">
-      {/* <div className="chat-header">
-        <div>
-          <h1>RAG chat</h1>
-          <p className="session-info">{session ? `Session ${session.sessionId.slice(-8)}` : 'No active session yet'}</p>
-        </div>
-      </div> */}
-
+      <div className="chat-header">
+        <h1>RAG chat</h1>
+      </div>
       <MessageList messages={messages} isLoading={status === 'loading'} />
 
       {error && <div className="chat-error">{error}</div>}
 
       <MessageInput
         value={queryText}
-        attachedFiles={attachedFiles}
         onChange={onQueryChange}
         onSend={onSend}
-        onFileAttach={onFileAttach}
-        onRemoveAttachment={onRemoveAttachment}
         disabled={status === 'loading'}
       />
     </main>

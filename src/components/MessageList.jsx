@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { User, Bot, Settings } from 'lucide-react'
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 function MessageList({ messages, isLoading }) {
   const listRef = useRef(null)
@@ -9,19 +11,25 @@ function MessageList({ messages, isLoading }) {
       listRef.current.scrollTo({ top: listRef.current.scrollHeight, behavior: 'smooth' })
     }
   }, [messages, isLoading])
-
+  console.log(messages)
   return (
     <div className="message-list" ref={listRef}>
       {messages.length === 0 ? (
         <div className="message-empty">Upload a document or send a message to start the chat.</div>
       ) : (
         messages.map((message, index) => (
-          <div key={`${message.role}-${index}`} className={`message message-${message.role}`}>
-            <div className="message-role">
-              {message.role === 'user' ? <User /> : message.role === 'assistant' ? <Bot /> : <Settings />}
+            <div key={`${message.role}-${index}`} className={`messagecard`}>
+              <div  className={`message message-${message.role}`}>
+              <div className="message-role">
+                {message.role === 'user' ? <User /> : message.role === 'assistant' ? <Bot /> : <Settings />}
+              </div>
+              <div className="message-text">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message.text}
+              </ReactMarkdown>
+              </div>
+              </div>
             </div>
-            <div className="message-text">{message.text}</div>
-          </div>
         ))
       )}
 

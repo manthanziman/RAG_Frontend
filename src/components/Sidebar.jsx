@@ -1,6 +1,9 @@
-import { Plus, MessageCircle } from "lucide-react"
-
+import { Plus, MessageCircle, LogOut, ShieldAlert } from "lucide-react"
+import { Link } from 'react-router-dom';
+import { useAuth } from "../contexts/AuthContext"
 function Sidebar({ sessions, activeSessionId, onNewChat, onSelectSession }) {
+  const { user, logout, isAdmin } = useAuth();
+
   return (
     <aside className="sidebar">
       <div className="sidebar-header">
@@ -32,6 +35,23 @@ function Sidebar({ sessions, activeSessionId, onNewChat, onSelectSession }) {
             )
           })
         )}
+      </div>
+
+      <div className="sidebar-footer">
+        {isAdmin && (
+          <Link to="/admin/documents" className="sidebar-action admin-link">
+            <ShieldAlert size={16} /> Admin Dashboard
+          </Link>
+        )}
+        <div className="user-profile">
+          <div className="user-info">
+            <span className="user-name">{user?.name}</span>
+            <span className="user-role">{user?.role}</span>
+          </div>
+          <button className="button-logout" onClick={logout} title="Log Out">
+            <LogOut size={16} />
+          </button>
+        </div>
       </div>
     </aside>
   )
