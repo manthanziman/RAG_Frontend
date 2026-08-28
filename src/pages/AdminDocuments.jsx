@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { apiFetch, getAuthToken } from '../api';
+import { apiFetch } from '../api';
 import { FileUp, Trash2, Edit2, Check, X } from 'lucide-react';
 
 export default function AdminDocuments() {
@@ -8,8 +8,12 @@ export default function AdminDocuments() {
   const [error, setError] = useState('');
 
   const [uploading, setUploading] = useState(false);
+  const [showUploadForm, setShowUploadForm] = useState(false);
+  const [uploadFile, setUploadFile] = useState(null);
+  const [uploadDescription, setUploadDescription] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
   const [editFile, setEditFile] = useState(null);
 
   const fetchDocuments = async () => {
@@ -29,10 +33,10 @@ export default function AdminDocuments() {
   }, []);
 
   const handleUpload = async (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    event.preventDefault();
+    if (!uploadFile) return setError('Please choose a PDF file.');
 
-    if (file.type !== 'application/pdf') {
+    if (uploadFile.type !== 'application/pdf') {
       return setError('Only PDF files are supported.');
     }
 
@@ -40,29 +44,23 @@ export default function AdminDocuments() {
     setError('');
 
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', uploadFile);
+    formData.append('description', uploadDescription.trim());
 
     try {
-      const token = getAuthToken();
-      const res = await fetch('http://localhost:4040/api/documents/chunk', {
+      await apiFetch('/documents/chunk', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
         body: formData,
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
       await fetchDocuments();
+      setShowUploadForm(false);
+      setUploadFile(null);
+      setUploadDescription('');
     } catch (err) {
       setError(err.message || 'Failed to upload document');
     } finally {
       setUploading(false);
-      event.target.value = '';
     }
   };
 
@@ -80,6 +78,7 @@ export default function AdminDocuments() {
   const startEdit = (doc) => {
     setEditingId(doc._id);
     setEditName(doc.name);
+    setEditDescription(doc.description || '');
     setEditFile(null);
   };
 
@@ -89,24 +88,16 @@ export default function AdminDocuments() {
         const formData = new FormData();
         formData.append('file', editFile);
         if (editName) formData.append('name', editName);
+        formData.append('description', editDescription);
 
-        const token = getAuthToken();
-        const res = await fetch(`http://localhost:4040/api/documents/${id}`, {
+        await apiFetch(`/documents/${id}`, {
           method: 'PUT',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
           body: formData,
         });
-
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}));
-          throw new Error(errorData.error || 'Reprocess failed');
-        }
       } else {
         await apiFetch(`/documents/${id}`, {
           method: 'PUT',
-          body: JSON.stringify({ name: editName }),
+          body: JSON.stringify({ name: editName, description: editDescription }),
         });
       }
 
@@ -130,12 +121,39 @@ export default function AdminDocuments() {
     <div className="admin-page">
       <div className="admin-page-header">
         <h1>Knowledge Base</h1>
-        <label className="button button-primary">
+        <button className="button button-primary" onClick={() => setShowUploadForm(true)} disabled={uploading}>
           <FileUp size={16} />
           {uploading ? 'Uploading...' : 'Upload PDF'}
-          <input type="file" accept="application/pdf" onChange={handleUpload} disabled={uploading} hidden />
-        </label>
+        </button>
       </div>
+
+      {showUploadForm && (
+        <div className="modal-backdrop" role="presentation" onMouseDown={() => !uploading && setShowUploadForm(false)}>
+          <form className="modal" onSubmit={handleUpload} onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Upload document</h2>
+              <button type="button" className="icon-button" onClick={() => setShowUploadForm(false)} disabled={uploading} title="Close">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="form-group">
+              <label htmlFor="upload-file">PDF file</label>
+              <input id="upload-file" type="file" accept="application/pdf" onChange={(event) => setUploadFile(event.target.files?.[0] || null)} disabled={uploading} required />
+            </div>
+            <div className="form-group">
+              <label htmlFor="upload-description">Description</label>
+              <textarea id="upload-description" value={uploadDescription} onChange={(event) => setUploadDescription(event.target.value)} placeholder="What is this document about?" rows="4" disabled={uploading} />
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="button" onClick={() => setShowUploadForm(false)} disabled={uploading}>Cancel</button>
+              <button type="submit" className="button button-primary" disabled={uploading || !uploadFile}>
+                <FileUp size={16} />
+                {uploading ? 'Uploading...' : 'Upload'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {error && <div className="admin-error">{error}</div>}
 
@@ -149,6 +167,7 @@ export default function AdminDocuments() {
             <thead>
               <tr>
                 <th>Name</th>
+                <th>Description</th>
                 <th>Size</th>
                 <th>Date Added</th>
                 <th>Actions</th>
@@ -165,12 +184,18 @@ export default function AdminDocuments() {
                           onChange={(e) => setEditName(e.target.value)}
                           style={{ flex: 1 }}
                         />
+                        <input
+                          value={editDescription}
+                          onChange={(e) => setEditDescription(e.target.value)}
+                          placeholder="Description"
+                          style={{ flex: 1 }}
+                        />
                         <label className="icon-button">
                           <FileUp size={16} />
                           <input
                             type="file"
                             accept="application/pdf"
-                            onChange={handleUpload}
+                            onChange={(event) => setEditFile(event.target.files?.[0] || null)}
                             hidden
                           />
                         </label>
@@ -179,6 +204,15 @@ export default function AdminDocuments() {
                       </div>
                     ) : (
                       doc.name
+                    )}
+                  </td>
+                  <td>
+                    {doc.description ? (
+                      <span className="description-preview" title={doc.description}>
+                        {doc.description}
+                      </span>
+                    ) : (
+                      <span className="text-muted">No description</span>
                     )}
                   </td>
                   <td>{formatSize(doc.size)}</td>

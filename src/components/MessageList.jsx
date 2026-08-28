@@ -15,7 +15,7 @@ function MessageList({ messages, isLoading }) {
   return (
     <div className="message-list" ref={listRef}>
       {messages.length === 0 ? (
-        <div className="message-empty">Upload a document or send a message to start the chat.</div>
+        <div className="message-empty">Send a message to start the chat.</div>
       ) : (
         messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className={`messagecard`}>

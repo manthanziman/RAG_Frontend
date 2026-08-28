@@ -435,6 +435,73 @@
   margin-bottom: 30px;
 }
 
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.45);
+}
+
+.modal {
+  width: min(100%, 480px);
+  padding: 24px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header,
+.modal-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-header {
+  margin-bottom: 22px;
+}
+
+.modal-header h2 {
+  font-size: 1.2rem;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.modal textarea {
+  width: 100%;
+  resize: vertical;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.modal textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.description-preview {
+  display: -webkit-box;
+  max-width: 320px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-height: 1.4;
+}
+
 .admin-table-container {
   background: var(--bg-panel);
   border-radius: 16px;
