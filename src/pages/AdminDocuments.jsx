@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
+import ErrorPopup from '../components/ErrorPopup';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { FileUp, Trash2, Edit2, Check, X } from 'lucide-react';
 
 export default function AdminDocuments() {
@@ -122,8 +124,14 @@ export default function AdminDocuments() {
       <div className="admin-page-header">
         <h1>Knowledge Base</h1>
         <button className="button button-primary" onClick={() => setShowUploadForm(true)} disabled={uploading}>
-          <FileUp size={16} />
-          {uploading ? 'Uploading...' : 'Upload PDF'}
+          {uploading ? (
+            <LoadingSpinner label="Uploading..." size="small" />
+          ) : (
+            <>
+              <FileUp size={16} />
+              Upload PDF
+            </>
+          )}
         </button>
       </div>
 
@@ -147,19 +155,27 @@ export default function AdminDocuments() {
             <div className="modal-actions">
               <button type="button" className="button" onClick={() => setShowUploadForm(false)} disabled={uploading}>Cancel</button>
               <button type="submit" className="button button-primary" disabled={uploading || !uploadFile}>
-                <FileUp size={16} />
-                {uploading ? 'Uploading...' : 'Upload'}
+                {uploading ? (
+                  <LoadingSpinner label="Uploading..." size="small" />
+                ) : (
+                  <>
+                    <FileUp size={16} />
+                    Upload
+                  </>
+                )}
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {error && <div className="admin-error">{error}</div>}
+      <ErrorPopup isOpen={Boolean(error)} message={error} onClose={() => setError('')} title="Document action failed" />
 
       <div className="admin-table-container">
         {loading ? (
-          <div className="admin-loading">Loading documents...</div>
+          <div className="admin-loading">
+            <LoadingSpinner label="Loading documents..." />
+          </div>
         ) : documents.length === 0 ? (
           <div className="admin-empty">No documents found. Upload a PDF to populate the knowledge base.</div>
         ) : (

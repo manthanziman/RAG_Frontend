@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import ErrorPopup from '../components/ErrorPopup';
+import LoadingSpinner from '../components/LoadingSpinner';
 import { LogIn } from 'lucide-react';
 
 export default function Login() {
@@ -37,7 +39,7 @@ export default function Login() {
           <p>Log in to access your operations dashboard</p>
         </div>
 
-        {error && <div className="auth-error">{error}</div>}
+        <ErrorPopup isOpen={Boolean(error)} message={error} onClose={() => setError('')} title="Login failed" />
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="form-group">
@@ -67,7 +69,7 @@ export default function Login() {
           </div>
 
           <button type="submit" className="button button-primary auth-submit" disabled={loading}>
-            {loading ? 'Logging in...' : 'Log In'}
+            {loading ? <LoadingSpinner label="Logging in..." size="small" /> : 'Log In'}
           </button>
         </form>
 
