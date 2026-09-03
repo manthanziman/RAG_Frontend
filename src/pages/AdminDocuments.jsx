@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
 import ErrorPopup from '../components/ErrorPopup';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { FileUp, Trash2, Edit2, Check, X } from 'lucide-react';
+import { FileUp, FileText, Trash2, Edit2, Check, X } from 'lucide-react';
 
 export default function AdminDocuments() {
   const [documents, setDocuments] = useState([]);
@@ -177,7 +177,21 @@ export default function AdminDocuments() {
             <LoadingSpinner label="Loading documents..." />
           </div>
         ) : documents.length === 0 ? (
-          <div className="admin-empty">No documents found. Upload a PDF to populate the knowledge base.</div>
+          <div className="admin-empty" role="status">
+            <div className="admin-empty-icon" aria-hidden="true">
+              <FileText size={30} strokeWidth={1.7} />
+              <span className="admin-empty-icon-plus">+</span>
+            </div>
+            <div className="admin-empty-content">
+              <p className="admin-empty-eyebrow">Your knowledge base is ready</p>
+              <h2>No documents yet</h2>
+              <p>Upload a PDF to give your assistant the information it needs to answer questions.</p>
+              <button className="button button-primary admin-empty-action" onClick={() => setShowUploadForm(true)} disabled={uploading}>
+                <FileUp size={17} />
+                Upload your first PDF
+              </button>
+            </div>
+          </div>
         ) : (
           <table className="admin-table">
             <thead>
