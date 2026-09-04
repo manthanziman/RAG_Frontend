@@ -1,4 +1,5 @@
-const API_BASE = 'https://ops-dashboard-chatbot.onrender.com';
+const API_BASE = 'https://ops-dashboard-chatbot.onrender.com/api';
+const API_BASE_DEV = 'http://localhost:4040/api';
 
 export const getAuthToken = () => {
   if (typeof window === 'undefined' || !window.localStorage) {
@@ -38,7 +39,7 @@ export async function apiFetch(endpoint, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${API_BASE_DEV}${endpoint}`, {
     ...options,
     credentials: options.credentials ?? 'include',
     headers,
