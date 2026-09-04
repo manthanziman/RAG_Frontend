@@ -73,6 +73,24 @@ export default function Login() {
           </button>
         </form>
 
+        <div className="test-credentials">
+          <div>
+            <strong>Test credentials</strong>
+            <span>email: john@example.com</span>
+            <span>password: 123456</span>
+          </div>
+          <button
+            type="button"
+            className="button test-credentials-button"
+            onClick={() => {
+              setEmail('john@example.com');
+              setPassword('123456');
+            }}
+          >
+            Use credentials
+          </button>
+        </div>
+
         <div className="auth-footer">
           Don't have an account? <Link to="/signup">Sign up</Link>
         </div>

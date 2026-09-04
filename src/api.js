@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:4040/api';
+const API_BASE = 'https://ops-dashboard-chatbot.onrender.com/api';
 
 export const getAuthToken = () => {
   if (typeof window === 'undefined' || !window.localStorage) {

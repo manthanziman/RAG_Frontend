@@ -59,6 +59,48 @@
   font-size: 1rem;
 }
 
+.test-credentials {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--bg-panel-muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.test-credentials > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.test-credentials strong {
+  margin-bottom: 2px;
+  color: var(--text-heading);
+  font-size: 0.85rem;
+}
+
+.test-credentials-button {
+  flex-shrink: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  background: var(--bg-panel);
+  font-size: 0.8rem;
+}
+
+.test-credentials-button:hover {
+  background: var(--primary-light);
+  border-color: var(--primary-light);
+  color: var(--primary-hover);
+}
+
 .auth-error {
   background: var(--danger-bg);
   color: var(--danger);
