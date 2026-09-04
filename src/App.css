@@ -655,8 +655,12 @@
 }
 
 .actions-cell {
-  display: flex;
-  gap: 8px;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.actions-cell .icon-button + .icon-button {
+  margin-left: 8px;
 }
 
 .icon-button {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../api';
-import { UserX, UserCheck } from 'lucide-react';
+import { UserX, UserCheck, Trash2 } from 'lucide-react';
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -39,18 +39,25 @@ export default function AdminUsers() {
     if (!window.confirm(`Are you sure you want to ${user.isActive ? 'deactivate' : 'activate'} this user?`)) return;
 
     try {
-      if (user.isActive) {
-        await apiFetch(`/users/${user._id}`, { method: 'DELETE' });
-        setUsers(users.map((u) => (u._id === user._id ? { ...u, isActive: false } : u)));
-      } else {
-        await apiFetch(`/users/${user._id}`, {
-          method: 'PUT',
-          body: JSON.stringify({ isActive: true }),
-        });
-        setUsers(users.map((u) => (u._id === user._id ? { ...u, isActive: true } : u)));
-      }
+      const isActive = !user.isActive;
+      await apiFetch(`/users/${user._id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ isActive }),
+      });
+      setUsers(users.map((u) => (u._id === user._id ? { ...u, isActive } : u)));
     } catch (err) {
       setError(err.message || 'Failed to update user status');
+    }
+  };
+
+  const handleDelete = async (user) => {
+    if (!window.confirm(`Are you sure you want to permanently delete ${user.name}?`)) return;
+
+    try {
+      await apiFetch(`/users/${user._id}`, { method: 'DELETE' });
+      setUsers(users.filter((u) => u._id !== user._id));
+    } catch (err) {
+      setError(err.message || 'Failed to delete user');
     }
   };
 
@@ -107,6 +114,13 @@ export default function AdminUsers() {
                       title={user.isActive ? 'Deactivate User' : 'Activate User'}
                     >
                       {user.isActive ? <UserX size={16} /> : <UserCheck size={16} />}
+                    </button>
+                    <button
+                      className="icon-button danger"
+                      onClick={() => handleDelete(user)}
+                      title="Delete User Permanently"
+                    >
+                      <Trash2 size={16} />
                     </button>
                   </td>
                 </tr>
