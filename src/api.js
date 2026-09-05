@@ -39,7 +39,7 @@ export async function apiFetch(endpoint, options = {}) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetch(`${API_BASE_DEV}${endpoint}`, {
     ...options,
     credentials: options.credentials ?? 'include',
     headers,
@@ -50,17 +50,24 @@ export async function apiFetch(endpoint, options = {}) {
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }
-    throw new Error('Unauthorized');
+    const error = new Error('Unauthorized');
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 403) {
-    throw new Error('Access denied');
+    const errorData = await response.json().catch(() => null);
+    const error = new Error(errorData?.error || errorData?.message || 'Access denied');
+    error.status = response.status;
+    throw error;
   }
 
   if (options.parseJson === false) {
     if (!response.ok) {
       const errorText = await response.text().catch(() => '');
-      throw new Error(errorText || `Request failed with status ${response.status}`);
+      const error = new Error(errorText || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      throw error;
     }
 
     return response;
@@ -69,7 +76,9 @@ export async function apiFetch(endpoint, options = {}) {
   const data = await response.json().catch(() => null);
 
   if (!response.ok) {
-    throw new Error(data?.error || `Request failed with status ${response.status}`);
+    const error = new Error(data?.error || `Request failed with status ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   return data;

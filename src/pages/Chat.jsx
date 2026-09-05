@@ -74,7 +74,12 @@ export default function Chat() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err.message || "Unable to load conversations");
+          if (err.status === 403) {
+            setSessions([]);
+            setActiveSessionId("");
+          } else {
+            setError(err.message || "Unable to load conversations");
+          }
         }
       } finally {
         if (!cancelled) {
@@ -365,7 +370,6 @@ export default function Chat() {
         onSelectSession={handleSelectSession}
       />
       <ChatWindow
-        session={activeSession}
         messages={activeSession?.messages || []}
         status={status}
         error={error}

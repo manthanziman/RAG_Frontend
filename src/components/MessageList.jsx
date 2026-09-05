@@ -34,10 +34,7 @@ function MessageList({messages,status}) {
       ref={listRef}
     >
       {messages.length === 0 ? (
-        <div className="message-empty">
-          Send a message to start the
-          chat.
-        </div>
+        <div className="message-empty" aria-hidden="true" />
       ) : (
         messages.map(
           (message, index) => (

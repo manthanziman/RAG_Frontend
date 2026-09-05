@@ -9,6 +9,7 @@ export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('user');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -26,7 +27,7 @@ export default function Signup() {
     setLoading(true);
 
     try {
-      await signup(name, email, password);
+      await signup(name, email, password, role);
       setSuccess(true);
       setTimeout(() => {
         navigate('/login');
@@ -88,6 +89,15 @@ export default function Signup() {
               placeholder="Minimum 6 characters"
               minLength={6}
             />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="role">Role</label>
+            <select id="role" value={role} onChange={(e) => setRole(e.target.value)} required>
+              <option value="user">User</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
           </div>
 
           <button type="submit" className="button button-primary auth-submit" disabled={loading || success}>

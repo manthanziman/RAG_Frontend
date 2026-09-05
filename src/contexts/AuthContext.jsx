@@ -27,7 +27,7 @@ export function AuthProvider({ children }) {
   const login = async (email, password) => {
     const data = await apiFetch('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     });
 
     if (data.success && data.token) {
@@ -39,16 +39,21 @@ export function AuthProvider({ children }) {
     throw new Error('Login failed');
   };
 
-  const signup = async (name, email, password) => {
+  const signup = async (name, email, password, role = 'user') => {
     const data = await apiFetch('/auth/signup', {
       method: 'POST',
-      body: JSON.stringify({ name, email, password }),
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        role,
+      }),
     });
     
-    if (!data.success) {
+    if (data.success === false || (!data.result && !data.user && !data._id)) {
       throw new Error('Signup failed');
     }
-    return data.result;
+    return data.result || data.user || data;
   };
 
   const logout = () => {
