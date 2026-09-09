@@ -290,6 +290,22 @@
 
 .message-empty {
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.message-empty h2 {
+  margin: 0 0 8px;
+  color: var(--text-heading);
+  font-size: 1.5rem;
+}
+
+.message-empty p {
+  margin: 0;
 }
 
 .welcome-backdrop {

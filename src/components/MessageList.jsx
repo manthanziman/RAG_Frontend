@@ -34,7 +34,10 @@ function MessageList({messages,status}) {
       ref={listRef}
     >
       {messages.length === 0 ? (
-        <div className="message-empty" aria-hidden="true" />
+        <div className="message-empty">
+          <h2>How can I help you today?</h2>
+          <p>Ask a question about your documents or operations.</p>
+        </div>
       ) : (
         messages.map(
           (message, index) => (

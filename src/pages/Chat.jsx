@@ -13,7 +13,9 @@ const mapServerMessages = (messages) =>
 
 export default function Chat() {
   const [sessions, setSessions] = useState([]);
-  const [activeSessionId, setActiveSessionId] = useState(() => localStorage.getItem(ACTIVE_SESSION_KEY) || "",);
+  const [activeSessionId, setActiveSessionId] = useState(() => (
+    localStorage.getItem(ACTIVE_SESSION_KEY) || null
+  ));
   const [queryText, setQueryText] = useState("");
   const [status, setStatus] = useState("idle");
   const [error, setError] = useState("");
@@ -67,16 +69,18 @@ export default function Chat() {
 
         setSessions(hydratedList);
         const storedActiveId = localStorage.getItem(ACTIVE_SESSION_KEY);
-        const initialId = (storedActiveId && hydratedList.some((session) => session.sessionId === storedActiveId) && storedActiveId) || hydratedList[0]?.sessionId || "";
+        const restoredSessionId = hydratedList.some(
+          (session) => session.sessionId === storedActiveId,
+        )
+          ? storedActiveId
+          : null;
 
-        if (initialId) {
-          setActiveSessionId(initialId);
-        }
+        setActiveSessionId(restoredSessionId);
       } catch (err) {
         if (!cancelled) {
           if (err.status === 403) {
             setSessions([]);
-            setActiveSessionId("");
+            setActiveSessionId(null);
           } else {
             setError(err.message || "Unable to load conversations");
           }
@@ -156,7 +160,8 @@ export default function Chat() {
 
   const handleNewChat = async () => {
     setQueryText("");
-    await createSession();
+    setError("");
+    setActiveSessionId(null);
   };
 
   const handleSelectSession = async (sessionId) => {
