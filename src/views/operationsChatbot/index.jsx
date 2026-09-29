@@ -4,6 +4,7 @@ import { Check, Lock, MessageCircle, Send, Trash2, X, Home } from "react-feather
 import { toast } from "react-toastify";
 import {
   useChat,
+  useCreateChatSession,
   useDeleteChatSession,
 } from "./Mutations";
 import ChatMessage from "./components/Chatmessagebubble";
@@ -59,17 +60,19 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
   const messagesEndRef = useRef(null);
 
   const [chat, chatState] = useChat();
+  const [createChatSession, createChatSessionState] = useCreateChatSession();
 
   const [deleteChatSession, deleteSessionState] =
     useDeleteChatSession();
 
   const isSending =
     chatState.loading ||
+    createChatSessionState.loading ||
     deleteSessionState.loading;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, chatState.loading]);
+  }, [messages, chatState.loading, createChatSessionState.loading]);
 
   const handleBubbleClick = () => {
     if (!isAuthenticated) {
@@ -137,9 +140,30 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
     setInputValue("");
 
     try {
+      let activeSessionId = sessionId;
+
+      if (!activeSessionId) {
+        const sessionResult = await createChatSession();
+        const createdSession = sessionResult.data?.createChatSession;
+
+        if (!createdSession) {
+          throw (
+            sessionResult.error ||
+            new Error("The chat service could not create a session.")
+          );
+        }
+
+        activeSessionId = createdSession.sessionId || createdSession.id;
+        if (!activeSessionId) {
+          throw new Error("The chat service returned an invalid session.");
+        }
+
+        setSessionId(activeSessionId);
+      }
+
       const result = await chat({
         variables: {
-          sessionId,
+          sessionId: activeSessionId,
           message: text,
         },
       });
@@ -147,10 +171,13 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
       const response = result.data?.chat;
 
       if (!response) {
-        throw new Error("The chat service returned an empty response.");
+        throw (
+          result.error ||
+          new Error("The chat service returned an empty response.")
+        );
       }
 
-      setSessionId(response.sessionId);
+      setSessionId(response.sessionId || activeSessionId);
       const serverMessages = mapMessages(response.messages, messages);
       const userMessageIndex = serverMessages.findLastIndex(
         (message) => message.sender === "user" && message.text === text,
@@ -266,7 +293,7 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
           />
         ))}
 
-        {chatState.loading && (
+        {(chatState.loading || createChatSessionState.loading) && (
           <div className="hosteller-chat__row">
             <div className="hosteller-chat__avatar">
               <MessageCircle size={17} aria-hidden="true" />
