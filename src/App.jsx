@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { ToastContainer } from "react-toastify";
+import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import ChatBotWidget from "./views/operationsChatbot";
 import AuthView from "./views/auth";
+import OpsChatHistory from "./views/opsChatHistory";
 // import { useSkin } from "@hooks/useSkin";
 
 function App() {
@@ -30,7 +32,18 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="ops-app-shell">
+      <header className="ops-app-nav">
+        <span className="ops-app-nav__brand">Operations</span>
+        <nav aria-label="Main navigation">
+          <NavLink to="/ops-chat-history">Chat history</NavLink>
+        </nav>
+      </header>
+      <Routes>
+        <Route path="/" element={<Navigate replace to="/ops-chat-history" />} />
+        <Route path="/ops-chat-history" element={<OpsChatHistory />} />
+        <Route path="*" element={<Navigate replace to="/ops-chat-history" />} />
+      </Routes>
       <ChatBotWidget
         isAuthenticated={isAuthenticated}
         onRequestLogin={handleRequestLogin}
