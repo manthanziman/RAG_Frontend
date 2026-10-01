@@ -20,3 +20,34 @@ export const useUploadDocument = () => {
 
 	return [uploadDocument, { loading, error, data }];
 };
+
+export const UPDATE_DOCUMENT = gql`
+	mutation UpdateDocument($id: ID!, $file: Upload!) {
+		updateDocument(id: $id, file: $file) {
+			documentId
+			parentsTotal
+			parentsUnchanged
+			parentsChangedOrAdded
+			parentsRemoved
+			childrenReembedded
+		}
+	}
+`;
+
+export const useUpdateDocument = () => {
+	const [updateDocument, { loading, error, data }] = useMutation(UPDATE_DOCUMENT);
+	return [updateDocument, { loading, error, data }];
+};
+
+export const DELETE_DOCUMENT = gql`
+	mutation DeleteDocument($id: ID!) {
+		deleteDocument(id: $id) {
+			id
+		}
+	}
+`;
+
+export const useDeleteDocument = () => {
+	const [deleteDocument, { loading, error, data }] = useMutation(DELETE_DOCUMENT);
+	return [deleteDocument, { loading, error, data }];
+};

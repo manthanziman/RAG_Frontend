@@ -1,6 +1,5 @@
 import { gql } from "@apollo/client";
 import { useLazyQuery } from "@apollo/client/react";
-import { useLoadingHandler } from "../../api/dataSource";
 
 export const GET_ALL_CHAT_SESSIONS = gql`
   query GetAllChatSessions {
@@ -42,8 +41,6 @@ export const useGetAllChatSessions = () => {
     },
   );
 
-  useLoadingHandler(loading);
-
   return {
     fetchSessions,
     loading,
@@ -61,8 +58,6 @@ export const useGetChatSessionBySessionId = () => {
       notifyOnNetworkStatusChange: true,
     },
   );
-
-  useLoadingHandler(loading);
 
   return {
     fetchSession,

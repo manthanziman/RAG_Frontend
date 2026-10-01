@@ -371,6 +371,129 @@
 	opacity: 0.8;
 }
 
+.ops-history__documents {
+	max-height: 190px;
+	overflow-y: auto;
+	margin-top: 12px;
+}
+
+.ops-history__documents-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin: 0 2px 6px;
+	color: #52677a;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.ops-history__documents-heading strong {
+	color: var(--history-muted);
+	font-size: 11px;
+}
+
+.ops-history__documents-state {
+	padding: 10px 4px;
+	color: var(--history-muted);
+	font-size: 12px;
+}
+
+.ops-history__documents-state.is-error {
+	color: #b42318;
+}
+
+.ops-history__document {
+	display: grid;
+	grid-template-columns: 18px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 2px;
+	border-top: 1px solid #e4ebf1;
+}
+
+.ops-history__document > svg {
+	color: #557e9e;
+}
+
+.ops-history__document-copy {
+	display: grid;
+	min-width: 0;
+	gap: 3px;
+}
+
+.ops-history__document-name {
+	overflow: hidden;
+	color: #29465e;
+	font-size: 12px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.ops-history__document-copy small {
+	color: var(--history-muted);
+	font-size: 10px;
+}
+
+.ops-history__document-actions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.ops-history__document-action {
+	position: relative;
+	display: inline-flex;
+	width: 30px;
+	height: 30px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	color: #557e9e;
+	background: transparent;
+	border: 0;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.ops-history__document-action:hover:not(:disabled) {
+	background: #e8eff5;
+}
+
+.ops-history__document-action.is-delete {
+	color: #b42318;
+}
+
+.ops-history__document-action.is-delete:hover:not(:disabled) {
+	background: #fcebea;
+}
+
+.ops-history__document-action input {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	clip-path: inset(50%);
+}
+
+.ops-history__document-action:focus-within,
+.ops-history__document-action:focus-visible {
+	outline: 2px solid #7c9db8;
+	outline-offset: 1px;
+}
+
+.ops-history__document-action:disabled {
+	cursor: wait;
+	opacity: 0.55;
+}
+
+.ops-history__document-status {
+	grid-column: 2 / -1;
+	color: var(--history-muted);
+	font-size: 10px;
+}
+
 .ops-history__spinner {
 	animation: ops-history-spin 900ms linear infinite;
 }

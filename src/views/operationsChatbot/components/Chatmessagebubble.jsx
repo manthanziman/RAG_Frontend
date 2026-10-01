@@ -1,6 +1,7 @@
 import { Check, MessageCircle } from "react-feather";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { useSkin } from "@hooks/useSkin";
 
 function ChatMessageBubble({ message }) {
   const isUser = message.sender === "user";

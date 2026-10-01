@@ -7,9 +7,12 @@ import {
   useCreateChatSession,
   useDeleteChatSession,
 } from "./Mutations";
+import { useGetChatSessionBySessionId } from "./Queries";
 import ChatMessage from "./components/Chatmessagebubble";
 import "./style.css";
-// import { useSkin } from "@hooks/useSkin";
+import { useSkin } from "@hooks/useSkin";
+
+const ACTIVE_CHAT_SESSION_KEY = "rag_active_chat_session_id";
 
 const formatTimestamp = (value) => {
   const date = value instanceof Date ? value : new Date(value);
@@ -54,13 +57,18 @@ const mapMessages = (messages = [], previousMessages = []) =>
 
 function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [sessionId, setSessionId] = useState(null);
+  const [sessionId, setSessionId] = useState(
+    () => sessionStorage.getItem(ACTIVE_CHAT_SESSION_KEY),
+  );
   const [messages, setMessages] = useState([createWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef(null);
+  const initialSessionId = useRef(sessionId);
 
   const [chat, chatState] = useChat();
   const [createChatSession, createChatSessionState] = useCreateChatSession();
+  const { fetchSession, loading: sessionLoading } =
+    useGetChatSessionBySessionId();
 
   const [deleteChatSession, deleteSessionState] =
     useDeleteChatSession();
@@ -68,7 +76,39 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
   const isSending =
     chatState.loading ||
     createChatSessionState.loading ||
-    deleteSessionState.loading;
+    deleteSessionState.loading ||
+    sessionLoading;
+
+  useEffect(() => {
+    if (!initialSessionId.current) {
+      return;
+    }
+
+    fetchSession({
+      variables: { sessionId: initialSessionId.current },
+    })
+      .then((result) => {
+        const session = result.data?.getChatSessionBySessionId;
+        if (!session) {
+          sessionStorage.removeItem(ACTIVE_CHAT_SESSION_KEY);
+          setSessionId(null);
+          return;
+        }
+
+        setMessages(
+          session.messages?.length
+            ? mapMessages(session.messages)
+            : [createWelcomeMessage()],
+        );
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") {
+          return;
+        }
+
+        console.error("Unable to restore chat session:", error);
+      });
+  }, [fetchSession]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -90,6 +130,7 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
     }
 
     setSessionId(null);
+    sessionStorage.removeItem(ACTIVE_CHAT_SESSION_KEY);
     setMessages([createWelcomeMessage()]);
     setInputValue("");
     setIsOpen(true);
@@ -108,6 +149,7 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
       });
 
       setSessionId(null);
+      sessionStorage.removeItem(ACTIVE_CHAT_SESSION_KEY);
       setMessages([createWelcomeMessage()]);
       setInputValue("");
       setIsOpen(false);
@@ -159,6 +201,7 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
         }
 
         setSessionId(activeSessionId);
+        sessionStorage.setItem(ACTIVE_CHAT_SESSION_KEY, activeSessionId);
       }
 
       const result = await chat({
@@ -177,7 +220,9 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
         );
       }
 
-      setSessionId(response.sessionId || activeSessionId);
+      const responseSessionId = response.sessionId || activeSessionId;
+      setSessionId(responseSessionId);
+      sessionStorage.setItem(ACTIVE_CHAT_SESSION_KEY, responseSessionId);
       const serverMessages = mapMessages(response.messages, messages);
       const userMessageIndex = serverMessages.findLastIndex(
         (message) => message.sender === "user" && message.text === text,
@@ -293,7 +338,7 @@ function ChatBotWidget({ isAuthenticated, onRequestLogin }) {
           />
         ))}
 
-        {(chatState.loading || createChatSessionState.loading) && (
+        {(chatState.loading || createChatSessionState.loading || sessionLoading) && (
           <div className="hosteller-chat__row">
             <div className="hosteller-chat__avatar">
               <MessageCircle size={17} aria-hidden="true" />

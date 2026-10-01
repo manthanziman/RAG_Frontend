@@ -2,8 +2,8 @@ import { gql } from "@apollo/client";
 import { useMutation } from "@apollo/client/react";
 
 export const CREATE_CHAT_SESSION = gql`
-  mutation CreateChatSession($hostelId: ID) {
-    createChatSession(hostelId: $hostelId) {
+  mutation CreateChatSession {
+    createChatSession {
       id
       sessionId
       title

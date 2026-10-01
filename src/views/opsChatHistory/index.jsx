@@ -1,21 +1,32 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
 	FileUp,
+	FileText,
 	LoaderCircle,
+	Pencil,
 	Search,
+	Trash2,
 } from "lucide-react";
 import { Alert, Button, Input } from "reactstrap";
 import { Check, Lock, MessageCircle, RotateCcw } from "react-feather";
 import { toast } from "react-toastify";
 import ChatMessageBubble from "../operationsChatbot/components/Chatmessagebubble";
-import { useUploadDocument } from "./Mutations";
 import {
+	useDeleteDocument,
+	useUpdateDocument,
+	useUploadDocument,
+} from "./Mutations";
+import {
+	useGetAllDocuments,
 	useGetAllChatSessions,
+	useGetAllHostels,
 	useGetChatSessionsByDateRange,
 } from "./Queries";
 import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import "./style.css";
+import { useSkin } from "@hooks/useSkin";
+
 
 const EMPTY_FILTERS = { sessionId: "", hostelId: "", text: "" };
 
@@ -52,6 +63,22 @@ const formatTime = (timestamp) => {
 
 const getInitial = (title) => title?.trim()?.charAt(0)?.toUpperCase() || "C";
 
+const formatFileSize = (size) => {
+	if (!Number.isFinite(size)) return "Size unavailable";
+	if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+	return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatDocumentDate = (value) => {
+	const date = new Date(value);
+	if (!value || Number.isNaN(date.getTime())) return "Date unavailable";
+	return new Intl.DateTimeFormat(undefined, {
+		month: "short",
+		day: "numeric",
+		year: "numeric",
+	}).format(date);
+};
+
 function OpsChatHistory() {
 	const {
 		fetchSessions: fetchAllSessions,
@@ -59,7 +86,14 @@ function OpsChatHistory() {
 		error: allSessionsError,
 		sessions: allSessionsData,
 	} = useGetAllChatSessions();
+	const { hostels } = useGetAllHostels();
 	const dateSessions = useGetChatSessionsByDateRange();
+	const {
+		documents,
+		loading: documentsLoading,
+		error: documentsError,
+		refetch: refetchDocuments,
+	} = useGetAllDocuments();
 
 	// ---------- State ----------
 	const [selectedSession, setSelectedSession] = useState(null);
@@ -71,6 +105,9 @@ function OpsChatHistory() {
 	const [endDate, setEndDate] = useState("");
 	const [activeDateRange, setActiveDateRange] = useState(false);
 	const [mutateUploadDocument, { loading: uploading }] = useUploadDocument();
+	const [mutateUpdateDocument, { loading: updating }] = useUpdateDocument();
+	const [mutateDeleteDocument, { loading: deleting }] = useDeleteDocument();
+	const [busyDocumentId, setBusyDocumentId] = useState(null);
 
 	// ---------- Refs ----------
 	// Gives us access to the flatpickr instance so Reset can clear it
@@ -105,15 +142,6 @@ function OpsChatHistory() {
 	const sessions = activeDateRange ? dateSessions.sessions : allSessionsData;
 	const loading = activeDateRange ? dateSessions.loading : allSessionsLoading;
 	const error = activeDateRange ? dateSessions.error : allSessionsError;
-
-	const hostelIds = useMemo(
-		() =>
-			[...new Set(allSessionsData.map((session) => session.hostelId).filter(Boolean))].sort(
-				(left, right) =>
-					String(left).localeCompare(String(right), undefined, { numeric: true }),
-			),
-		[allSessionsData],
-	);
 
 	const sortedSessions = useMemo(
 		() =>
@@ -226,13 +254,54 @@ function OpsChatHistory() {
 		try {
 			const result = await mutateUploadDocument({ variables: { file } });
 			const uploaded = result.data?.uploadDocument;
+			if (!uploaded) throw result.error || new Error("Unable to upload document.");
+			await refetchDocuments();
 			toast.success(
 				`Uploaded ${file.name}${uploaded?.parentCount != null ? ` (${uploaded.parentCount} sections)` : ""}.`,
 			);
 		} catch (uploadError) {
 			toast.error(uploadError.message || "Unable to upload document.");
 		}
-	}, [mutateUploadDocument]);
+	}, [mutateUploadDocument, refetchDocuments]);
+
+	const handleReplaceDocument = useCallback(async (event, documentId) => {
+		const file = event.target.files?.[0];
+		event.target.value = "";
+		if (!file) return;
+
+		setBusyDocumentId(documentId);
+		try {
+			const result = await mutateUpdateDocument({
+				variables: { id: documentId, file },
+			});
+			if (!result.data?.updateDocument) {
+				throw result.error || new Error("Unable to update document.");
+			}
+			await refetchDocuments();
+			toast.success(`Updated ${file.name}.`);
+		} catch (updateError) {
+			toast.error(updateError.message || "Unable to update document.");
+		} finally {
+			setBusyDocumentId(null);
+		}
+	}, [mutateUpdateDocument, refetchDocuments]);
+
+	const handleDeleteDocument = useCallback(async (document) => {
+		if (!window.confirm(`Delete ${document.name || "this document"} from Bot Context?`)) {
+			return;
+		}
+
+		setBusyDocumentId(document.id);
+		try {
+			await mutateDeleteDocument({ variables: { id: document.id } });
+			await refetchDocuments();
+			toast.success(`Deleted ${document.name || "document"}.`);
+		} catch (deleteError) {
+			toast.error(deleteError.message || "Unable to delete document.");
+		} finally {
+			setBusyDocumentId(null);
+		}
+	}, [mutateDeleteDocument, refetchDocuments]);
 
 	return (
 		<main className="ops-history">
@@ -263,8 +332,10 @@ function OpsChatHistory() {
 								onChange={(event) => setHostelIdInput(event.target.value)}
 							>
 								<option value="">All hostels</option>
-								{hostelIds.map((hostelId) => (
-									<option key={hostelId} value={hostelId}>{hostelId}</option>
+								{hostels.map((hostel) => (
+									<option key={hostel.id} value={hostel.id}>
+										{hostel.name || hostel.id}
+									</option>
 								))}
 							</Input>
 						</label>
@@ -300,7 +371,12 @@ function OpsChatHistory() {
 					<h3 className="ops-history__context-header">Bot Context</h3>
 					<form>
 						<label className={`ops-history__upload ${uploading ? "is-uploading" : ""}`}>
-							<Input type="file" onChange={handleUpload} disabled={uploading} />
+							<Input
+								type="file"
+								accept="application/pdf,.pdf"
+								onChange={handleUpload}
+								disabled={uploading || updating || deleting}
+							/>
 							{uploading ? (
 								<LoaderCircle size={19} className="ops-history__spinner" aria-hidden="true" />
 							) : (
@@ -310,6 +386,71 @@ function OpsChatHistory() {
 							<small>{uploading ? "Please wait" : "Choose a file"}</small>
 						</label>
 					</form>
+					<div className="ops-history__documents" aria-label="Uploaded documents">
+						<div className="ops-history__documents-heading">
+							<span>Uploaded documents</span>
+							<strong>{documents.length}</strong>
+						</div>
+						{documentsLoading && (
+							<div className="ops-history__documents-state">Loading documents...</div>
+						)}
+						{!documentsLoading && documentsError && (
+							<div className="ops-history__documents-state is-error">
+								Unable to load documents.
+							</div>
+						)}
+						{!documentsLoading && !documentsError && documents.length === 0 && (
+							<div className="ops-history__documents-state">No documents uploaded yet.</div>
+						)}
+						{!documentsLoading && !documentsError && documents.map((document) => {
+							const isBusy = busyDocumentId === document.id && (updating || deleting);
+							return (
+								<div className="ops-history__document" key={document.id}>
+									<FileText size={17} aria-hidden="true" />
+									<div className="ops-history__document-copy">
+										<span className="ops-history__document-name" title={document.name}>
+											{document.name || "Untitled document"}
+										</span>
+										<small>
+											{formatFileSize(document.size)} | {document.parentCount ?? 0} sections | Added {formatDocumentDate(document.createdAt)}
+										</small>
+									</div>
+									<div className="ops-history__document-actions">
+										<label
+											className="ops-history__document-action"
+											title="Replace document"
+											aria-label={`Replace ${document.name || "document"}`}
+										>
+											<Pencil size={15} aria-hidden="true" />
+											<Input
+												type="file"
+												accept="application/pdf,.pdf"
+												onChange={(event) => handleReplaceDocument(event, document.id)}
+												disabled={uploading || updating || deleting}
+											/>
+										</label>
+										<Button
+											type="button"
+											className="ops-history__document-action is-delete"
+											title="Delete document"
+											aria-label={`Delete ${document.name || "document"}`}
+											onClick={() => handleDeleteDocument(document)}
+											disabled={uploading || updating || deleting}
+										>
+											{isBusy && deleting ? (
+												<LoaderCircle size={15} className="ops-history__spinner" aria-hidden="true" />
+											) : (
+												<Trash2 size={15} aria-hidden="true" />
+											)}
+										</Button>
+									</div>
+									{isBusy && updating && (
+										<span className="ops-history__document-status">Updating...</span>
+									)}
+								</div>
+							);
+						})}
+					</div>
 				</div>
 			</div>
 

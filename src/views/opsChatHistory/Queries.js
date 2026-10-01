@@ -1,5 +1,5 @@
 import { gql } from "@apollo/client";
-import { useLazyQuery } from "@apollo/client/react";
+import { useLazyQuery, useQuery } from "@apollo/client/react";
 
 const CHAT_SESSION_FIELDS = gql`
 	fragment ChatSessionFields on ChatSession {
@@ -20,6 +20,30 @@ export const GET_ALL_CHAT_SESSIONS = gql`
 	query GetAllChatSessions {
 		getAllChatSessions {
 			...ChatSessionFields
+		}
+	}
+`;
+
+export const GET_ALL_HOSTELS = gql`
+	query GetAllHostels {
+		getAllHostels {
+			id
+			name
+			location
+		}
+	}
+`;
+
+export const GET_ALL_DOCUMENTS = gql`
+	query GetAllDocuments {
+		getAllDocuments {
+			id
+			name
+			mimeType
+			size
+			createdAt
+			updatedAt
+			parentCount
 		}
 	}
 `;
@@ -48,6 +72,33 @@ export const useGetAllChatSessions = () => {
 		loading,
 		error,
 		sessions: data?.getAllChatSessions || [],
+	};
+};
+
+export const useGetAllHostels = () => {
+	const { loading, error, data } = useQuery(GET_ALL_HOSTELS, {
+		fetchPolicy: "network-only",
+		errorPolicy: "all",
+	});
+
+	return {
+		loading,
+		error,
+		hostels: data?.getAllHostels || [],
+	};
+};
+
+export const useGetAllDocuments = () => {
+	const { loading, error, data, refetch } = useQuery(GET_ALL_DOCUMENTS, {
+		fetchPolicy: "network-only",
+		errorPolicy: "all",
+	});
+
+	return {
+		loading,
+		error,
+		documents: data?.getAllDocuments || [],
+		refetch,
 	};
 };
 

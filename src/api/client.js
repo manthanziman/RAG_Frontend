@@ -15,6 +15,7 @@ const authLink = new SetContextLink((prevContext) => {
   return {
     headers: {
       ...prevContext.headers,
+      "Apollo-Require-Preflight": "true",
       ...(token
         ? {
             Authorization: `Bearer ${token}`,
