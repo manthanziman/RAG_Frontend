@@ -25,7 +25,7 @@ import {
 import Flatpickr from "react-flatpickr";
 import "flatpickr/dist/flatpickr.css";
 import "./style.css";
-import { useSkin } from "@hooks/useSkin";
+// import { useSkin } from "@hooks/useSkin";
 
 
 const EMPTY_FILTERS = { sessionId: "", hostelId: "", text: "" };

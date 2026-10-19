@@ -10,7 +10,7 @@ import {
 import { useGetChatSessionBySessionId } from "./Queries";
 import ChatMessage from "./components/Chatmessagebubble";
 import "./style.css";
-import { useSkin } from "@hooks/useSkin";
+// import { useSkin } from "@hooks/useSkin";
 
 const ACTIVE_CHAT_SESSION_KEY = "rag_active_chat_session_id";
 

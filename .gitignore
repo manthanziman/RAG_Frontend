@@ -23,5 +23,5 @@ dist-ssr
 *.sln
 *.sw?
 
-src/views/auth
+# src/views/auth
 # src/views/opsChatHistory
